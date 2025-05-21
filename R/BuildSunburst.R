@@ -250,8 +250,8 @@ createPathwaySunburst <- function(
   # Extract eventCode column names
   eventCohortCodeCols <- grep("^eventCohortCode", names(data_frame), value = TRUE)
   
-  # Join df2 info to each eventCode column in df1
-  joined_info <- purrr::map_dfc(
+  # Join columns dynamically
+  joinedInfo <- purrr::map_dfc(
     eventCohortCodeCols, 
     function(colname) {
       
@@ -260,22 +260,22 @@ createPathwaySunburst <- function(
       data_frame |>
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventCohortIdAndCode, by = setNames("code", colname)) |>
-        dplyr::transmute(
+        dplyr::mutate(
           !!paste0("eventCohortId", joinColSuffix) := eventCohortId
         )
    }
   )
   
-  # Join event cohort id to main data frame
-  data_frame <- data_frame |> 
-    dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_1" = "code")) |> 
-    dplyr::rename(eventCohortId_1 = eventCohortId) |>
-    dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_2" = "code")) |> 
-    dplyr::rename(eventCohortId_2 = eventCohortId) |>
-    dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_3" = "code")) |> 
-    dplyr::rename(eventCohortId_3 = eventCohortId) |>
-    dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_4" = "code")) |> 
-    dplyr::rename(eventCohortId_4 = eventCohortId)
+  # # Join event cohort id to main data frame
+  # data_frame <- data_frame |> 
+  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_1" = "code")) |> 
+  #   dplyr::rename(eventCohortId_1 = eventCohortId) |>
+  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_2" = "code")) |> 
+  #   dplyr::rename(eventCohortId_2 = eventCohortId) |>
+  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_3" = "code")) |> 
+  #   dplyr::rename(eventCohortId_3 = eventCohortId) |>
+  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_4" = "code")) |> 
+  #   dplyr::rename(eventCohortId_4 = eventCohortId)
   
   cohortDefinitionSet <- generationSet |>
     dplyr::select(c(cohortId, cohortName))
