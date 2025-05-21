@@ -257,11 +257,11 @@ createPathwaySunburst <- function(
       
       joinColSuffix <- gsub("eventCohortCode", "", colname)  # Extract the number, e.g. '1'
       
-      data_frame %>%
+      data_frame |>
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventCohortIdAndCode, by = setNames("code", colname)) |>
         dplyr::transmute(
-          !!paste0("eventCohortId", joinColSuffix) := code
+          !!paste0("eventCohortId", joinColSuffix) := eventCohortId
         )
    }
   )
