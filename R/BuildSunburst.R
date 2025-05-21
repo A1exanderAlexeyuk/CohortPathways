@@ -52,7 +52,8 @@ createPathwaySunburst <- function(
   # Get event names
   eventNames <- .splitEvenToPowers(
     df = isCombo, 
-    generationSet = generationSet
+    generationSet = generationSet,
+    cpResults = cpResults
   )
   
   # Create final data frame with counts and full path name
@@ -90,6 +91,7 @@ createPathwaySunburst <- function(
 
 
 .prepareEventNames <- function(generationSet, cpResults) {
+  
   event_names <- purrr::pluck(
     cpResults, "pathwayAnalysisCodesLong"
   ) |>
@@ -104,12 +106,13 @@ createPathwaySunburst <- function(
     dplyr::reframe(
       combination = paste(.data$cohortName, collapse = " & ")
     )
+  
   return(event_names)
 }
 
 
 # Function to split an even number into a chosen number of power-of-two summands.
-.splitEvenToPowers <- function(df, generationSet) {
+.splitEvenToPowers <- function(df, generationSet, cpResults) {
   
   # Set variables
   comboId <- df$comboId
@@ -240,7 +243,7 @@ createPathwaySunburst <- function(
   )
   
   # Get event cohort ids of and code (comboId)
-  eventCohortIdAndCode <- cohortPathwaysResults[["pathwayAnalysisCodesLong"]] |> 
+  eventCohortIdAndCode <- cpResults[["pathwayAnalysisCodesLong"]] |> 
     dplyr::filter(isCombo == 0) |> 
     dplyr::select(c(eventCohortId, code))
   
