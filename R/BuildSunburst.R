@@ -248,12 +248,12 @@ createPathwaySunburst <- function(
     dplyr::select(c(eventCohortId, code))
   
   # Extract eventCode column names
-  eventCohortCodeCols <- grep("^eventCohortCode\\d+$", names(data_frame), value = TRUE)
+  eventCohortCodeCols <- grep("^eventCohortCode", names(data_frame), value = TRUE)
   
   # Join df2 info to each eventCode column in df1
   joined_info <- purrr::map_dfc(
     eventCohortCodeCols, 
-    function(colname, data_frame, eventCohortIdAndCode) {
+    function(colname) {
       
       joinColSuffix <- gsub("eventCohortCode", "", colname)  # Extract the number, e.g. '1'
       
