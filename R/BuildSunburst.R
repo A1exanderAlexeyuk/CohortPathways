@@ -261,7 +261,7 @@ createPathwaySunburst <- function(
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventCohortIdAndCode, by = setNames("code", colname)) |>
         dplyr::mutate(
-          !!paste0("eventCohortId", joinColSuffix) := eventCohortId
+          !!paste0("eventCohortId", joinColSuffix) := eventCohortId, .keep = "none"
         )
    }
   )
