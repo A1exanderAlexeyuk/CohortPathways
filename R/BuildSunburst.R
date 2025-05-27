@@ -61,16 +61,23 @@ createPathwaySunburst <- function(
     dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) |>
     dplyr::filter(countValue > minCount)
   
+  # Remove columns with all NA values
+  pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
+  
+  # Convert numeric column to character for joining
+  eventNames <- eventNames |> 
+    dplyr::mutate(comboId = as.character(comboId))
+  
   # Select all "step" column names
   stepCols <- grep("^step", names(pathsData), value = TRUE)
   
-  # Loop over "step" columns and join 
+  # Loop over "step" columns and join
   stepNames <- purrr::map_dfc(
     stepCols,
     function(colname) {
-      
+
       joinColSuffix <- gsub("step", "", colname)
-      
+
       pathsData |>
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventNames, by = setNames("comboId", colname)) |>
@@ -80,31 +87,24 @@ createPathwaySunburst <- function(
     }
   )
   
-  # # Combine original data with new step name columns
+  # # # Combine original data with new step name columns
   # finalResult <- dplyr::bind_cols(pathsData, stepNames)
-  
-
-  
-  # Convert numeric columns to character
-  pathsData[stepCols] <- lapply(pathsData[stepCols], as.character)
-  
-  # Remove columns with all NA values
-  pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
-  
-  # Loop over each step column and join with matching column from eventNames
-  for (col in stepCols) {
-    
-    # Extract number, e.g., from "step1" get "1"
-    stepNum <- gsub("step", "", col)
-    eventCol <- paste0("stepName", stepNum)
-    
-    # Join the data where stepX == stepNameX
-    pathsData <- dplyr::left_join(
-      pathsData,
-      stepNames |> dplyr::select(tidyselect::all_of(eventCol)),
-      by = setNames(eventCol, col)
-    )
-  }
+  # 
+  # 
+  # # Loop over each step column and join with matching column from eventNames
+  # for (col in stepCols) {
+  #   
+  #   # Extract number, e.g., from "step1" get "1"
+  #   stepNum <- gsub("step", "", col)
+  #   eventCol <- paste0("stepName", stepNum)
+  #   
+  #   # Join the data where stepX == stepNameX
+  #   pathsData <- dplyr::left_join(
+  #     pathsData,
+  #     stepNames |> dplyr::select(tidyselect::all_of(eventCol)),
+  #     by = setNames(eventCol, col)
+  #   )
+  # }
   
   
   # Convert tabular data to JSON
