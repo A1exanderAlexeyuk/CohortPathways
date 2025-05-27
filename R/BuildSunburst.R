@@ -50,9 +50,9 @@ createPathwaySunburst <- function(
     cpResults = cpResults
   )
   
-  # Convert numeric column to character for joining
-  eventNames <- eventNames |> 
-    dplyr::mutate(comboId = as.character(comboId))
+  # # Convert numeric column to character for joining
+  # eventNames <- eventNames |> 
+  #   dplyr::mutate(comboId = as.character(comboId))
   
   # Filter rows to those with count above minCount value (default=5)
   pathsData <- cpResults$pathwaysAnalysisPathsData|>
