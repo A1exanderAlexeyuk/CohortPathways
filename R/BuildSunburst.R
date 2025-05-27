@@ -80,8 +80,32 @@ createPathwaySunburst <- function(
     }
   )
   
-  # Combine original data with new step name columns
-  finalResult <- dplyr::bind_cols(pathsData, stepNames)
+  # # Combine original data with new step name columns
+  # finalResult <- dplyr::bind_cols(pathsData, stepNames)
+  
+
+  
+  # Convert numeric columns to character
+  pathsData[stepCols] <- lapply(pathsData[stepCols], as.character)
+  
+  # Remove columns with all NA values
+  pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
+  
+  # Loop over each step column and join with matching column from eventNames
+  for (col in stepCols) {
+    
+    # Extract number, e.g., from "step1" get "1"
+    stepNum <- gsub("step", "", col)
+    eventCol <- paste0("stepName", stepNum)
+    
+    # Join the data where stepX == stepNameX
+    pathsData <- dplyr::left_join(
+      pathsData,
+      stepNames |> dplyr::select(tidyselect::all_of(eventCol)),
+      by = setNames(eventCol, col)
+    )
+  }
+  
   
   # Convert tabular data to JSON
   pathsDataJson <- d3r::d3_nest(
