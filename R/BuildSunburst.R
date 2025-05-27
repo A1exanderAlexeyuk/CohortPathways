@@ -38,12 +38,12 @@ createPathwaySunburst <- function(
     types = "data.frame"
   )
   
-  # Extract required data
-  pathwaysAnalysisPathsDatas <- purrr::pluck(
-    cpResults, "pathwaysAnalysisPathsData"
-  ) |>
-    dplyr::group_by(.data$targetCohortId) |>
-    dplyr::group_split()
+  # # Extract required data
+  # pathwaysAnalysisPathsDatas <- purrr::pluck(
+  #   cpResults, "pathwaysAnalysisPathsData"
+  # ) |>
+  #   dplyr::group_by(.data$targetCohortId) |>
+  #   dplyr::group_split()
   
   isCombo <- purrr::pluck(cpResults, "isCombo")
   
@@ -56,29 +56,42 @@ createPathwaySunburst <- function(
     cpResults = cpResults
   )
   
-  # Create final data frame with counts and full path name
-  paths_data <- cpResults$pathwaysAnalysisPathsData|>
+  # Filter rows to those with count above minCount value (default=5)
+  pathsData <- cpResults$pathwaysAnalysisPathsData|>
     dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) |>
-    dplyr::left_join(eventNames, by = c("step1" = "comboId")) |>
-    dplyr::rename(step1Name = pathName) |>
-    dplyr::left_join(eventNames, by = c("step2" = "comboId")) |>
-    dplyr::rename(step2Name = pathName) |>
-    dplyr::left_join(eventNames, by = c("step3" = "comboId")) |>
-    dplyr::rename(step3Name = pathName) |>
-    dplyr::left_join(eventNames, by = c("step4" = "comboId")) |>
-    dplyr::rename(step4Name = pathName) |>
-    dplyr::select(-c(1:10)) |>
     dplyr::filter(countValue > minCount)
   
+  # Select all "step" column names
+  stepCols <- grep("^step", names(pathsData), value = TRUE)
+  
+  # Loop over "step" columns and join 
+  stepNames <- purrr::map_dfc(
+    stepCols,
+    function(colname) {
+      
+      joinColSuffix <- gsub("step", "", colname)
+      
+      pathsData |>
+        dplyr::select(tidyselect::all_of(colname)) |>
+        dplyr::left_join(eventNames, by = setNames("comboId", colname)) |>
+        dplyr::transmute(
+          !!paste0("stepName", joinColSuffix) := pathName
+        )
+    }
+  )
+  
+  # Combine original data with new step name columns
+  finalResult <- dplyr::bind_cols(pathsData, stepNames)
+  
   # Convert tabular data to JSON
-  paths_data_json <- d3r::d3_nest(
-    paths_data, 
+  pathsDataJson <- d3r::d3_nest(
+    pathsData, 
     value_cols = "countValue"
   )
   
   # Create sunburst plot
-  sunburst_plot <- sunburstR::sunburst(
-    data = paths_data_json, 
+  sunburstPlot <- sunburstR::sunburst(
+    data = pathsDataJson, 
     width = plotWidth, 
     height = plotHeight, 
     valueField = "countValue",
@@ -86,7 +99,7 @@ createPathwaySunburst <- function(
     count = TRUE
   )
   
-  return(sunburst_plot)
+  return(sunburstPlot)
 }
 
 
