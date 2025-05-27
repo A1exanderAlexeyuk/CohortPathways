@@ -38,13 +38,7 @@ createPathwaySunburst <- function(
     types = "data.frame"
   )
   
-  # # Extract required data
-  # pathwaysAnalysisPathsDatas <- purrr::pluck(
-  #   cpResults, "pathwaysAnalysisPathsData"
-  # ) |>
-  #   dplyr::group_by(.data$targetCohortId) |>
-  #   dplyr::group_split()
-  
+  # Extract "isCombo" data frame from "cpResults" list
   isCombo <- purrr::pluck(cpResults, "isCombo")
   
   checkmate::assertDataFrame(x = isCombo, min.rows = 1, min.cols = 1)
@@ -56,6 +50,10 @@ createPathwaySunburst <- function(
     cpResults = cpResults
   )
   
+  # Convert numeric column to character for joining
+  eventNames <- eventNames |> 
+    dplyr::mutate(comboId = as.character(comboId))
+  
   # Filter rows to those with count above minCount value (default=5)
   pathsData <- cpResults$pathwaysAnalysisPathsData|>
     dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) |>
@@ -63,10 +61,6 @@ createPathwaySunburst <- function(
   
   # Remove columns with all NA values
   pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
-  
-  # Convert numeric column to character for joining
-  eventNames <- eventNames |> 
-    dplyr::mutate(comboId = as.character(comboId))
   
   # Select all "step" column names
   stepCols <- grep("^step", names(pathsData), value = TRUE)
@@ -87,10 +81,9 @@ createPathwaySunburst <- function(
     }
   )
   
-  # # # Combine original data with new step name columns
-  # finalResult <- dplyr::bind_cols(pathsData, stepNames)
-  # 
-  # 
+  # # Combine original data with new step name columns
+  pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames)
+
   # # Loop over each step column and join with matching column from eventNames
   # for (col in stepCols) {
   #   
@@ -106,10 +99,9 @@ createPathwaySunburst <- function(
   #   )
   # }
   
-  
   # Convert tabular data to JSON
   pathsDataJson <- d3r::d3_nest(
-    pathsData, 
+    pathsDataFinal, 
     value_cols = "countValue"
   )
   
