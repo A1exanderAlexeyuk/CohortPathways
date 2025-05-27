@@ -277,11 +277,12 @@ createPathwaySunburst <- function(
   #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_4" = "code")) |> 
   #   dplyr::rename(eventCohortId_4 = eventCohortId)
   
+  # Extract event cohort names
   cohortDefinitionSet <- generationSet |>
     dplyr::select(c(cohortId, cohortName))
   
   # Extract "eventCohortId_" column names
-  eventCohortIdCols <- grep("^eventCohortId_", names(data_frame), value = TRUE)
+  eventCohortIdCols <- grep("^eventCohortId_", names(eventCohortIds), value = TRUE)
   
   # Join columns dynamically
   eventCohortNames <- purrr::map_dfc(
@@ -290,14 +291,15 @@ createPathwaySunburst <- function(
       
       joinColSuffix <- gsub("eventCohortId_", "", colname)
       
-      cohortDefinitionSet |>
+      eventCohortIds |>
         dplyr::select(tidyselect::all_of(colname)) |>
-        dplyr::left_join(eventIds, by = setNames("cohortId", colname)) |>
+        dplyr::left_join(cohortDefinitionSet, by = setNames("cohortId", colname)) |>
         dplyr::transmute(
           !!paste0("eventCohortName_", joinColSuffix) := cohortName
         )
     }
   )
+  
   
   # Combine the original data with the newly joined names
   finalResult <- dplyr::bind_cols(data_frame, eventCohortNames)
