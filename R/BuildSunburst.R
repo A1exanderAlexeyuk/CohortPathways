@@ -300,10 +300,14 @@ createPathwaySunburst <- function(
     }
   )
   
-  
   # Combine the original data with the newly joined names
-  finalResult <- dplyr::bind_cols(data_frame, eventCohortNames)
+  data_frame <- dplyr::bind_cols(
+    data_frame |> dplyr::select(comboId), 
+    eventCohortNames
+  )
   
+  # Columns to concatenate
+  colsToConcat <- grep("^eventCohortName_", names(data_frame), value = TRUE)
   
   # # Join event cohort name to main data frame
   # data_frame <- data_frame |>
@@ -316,11 +320,18 @@ createPathwaySunburst <- function(
   #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_4" = "cohortId")) |> 
   #   dplyr::rename(eventCohortName_4 = cohortName)
   
-  # Create path name and comboId map
-  data_frame <- data_frame |>
-    tidyr::unite(col = "pathName", eventCohortName_1:eventCohortName_4, sep = " | ", na.rm = TRUE) |>
-    dplyr::select(c(comboId, pathName))
+  # # Create path name and comboId map
+  # data_frame <- data_frame |>
+  #   tidyr::unite(col = "pathName", eventCohortName_1:eventCohortName_4, sep = " | ", na.rm = TRUE) |>
+  #   dplyr::select(c(comboId, pathName))
   
+  data_frame <- data_frame |>
+    tidyr::unite(
+      "pathName",                       # New column name
+      tidyselect::all_of(colsToConcat), # Columns to unite
+      sep = " | ",                      # Separator
+      na.rm = TRUE                      # Skip NA values
+    )
   
   return(data_frame)
 }
