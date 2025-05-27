@@ -247,11 +247,11 @@ createPathwaySunburst <- function(
     dplyr::filter(isCombo == 0) |> 
     dplyr::select(c(eventCohortId, code))
   
-  # Extract eventCode column names
-  eventCohortCodeCols <- grep("^eventCohortCode", names(data_frame), value = TRUE)
+  # Extract "eventCohortCode_" column names
+  eventCohortCodeCols <- grep("^eventCohortCode_", names(data_frame), value = TRUE)
   
   # Join columns dynamically
-  joinedInfo <- purrr::map_dfc(
+  eventCohortIds <- purrr::map_dfc(
     eventCohortCodeCols, 
     function(colname) {
       
@@ -261,7 +261,7 @@ createPathwaySunburst <- function(
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventCohortIdAndCode, by = setNames("code", colname)) |>
         dplyr::mutate(
-          !!paste0("eventCohortId", joinColSuffix) := eventCohortId, .keep = "none"
+          !!paste0("eventCohortId", joinColSuffix) := eventCohortId, .keep = "unused"
         )
    }
   )
@@ -280,16 +280,39 @@ createPathwaySunburst <- function(
   cohortDefinitionSet <- generationSet |>
     dplyr::select(c(cohortId, cohortName))
   
-  # Join event cohort name to main data frame
-  data_frame <- data_frame |>
-    dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_1" = "cohortId")) |> 
-    dplyr::rename(eventCohortName_1 = cohortName) |>
-    dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_2" = "cohortId")) |> 
-    dplyr::rename(eventCohortName_2 = cohortName) |>
-    dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_3" = "cohortId")) |> 
-    dplyr::rename(eventCohortName_3 = cohortName) |>
-    dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_4" = "cohortId")) |> 
-    dplyr::rename(eventCohortName_4 = cohortName)
+  # Extract "eventCohortId_" column names
+  eventCohortIdCols <- grep("^eventCohortId_", names(data_frame), value = TRUE)
+  
+  # Join columns dynamically
+  eventCohortNames <- purrr::map_dfc(
+    eventCohortIdCols,
+    function(colname) {
+      
+      joinColSuffix <- gsub("eventCohortId_", "", colname)
+      
+      cohortDefinitionSet |>
+        dplyr::select(tidyselect::all_of(colname)) |>
+        dplyr::left_join(eventIds, by = setNames("cohortId", colname)) |>
+        dplyr::transmute(
+          !!paste0("eventCohortName_", joinColSuffix) := cohortName
+        )
+    }
+  )
+  
+  # Combine the original data with the newly joined names
+  finalResult <- dplyr::bind_cols(data_frame, eventCohortNames)
+  
+  
+  # # Join event cohort name to main data frame
+  # data_frame <- data_frame |>
+  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_1" = "cohortId")) |> 
+  #   dplyr::rename(eventCohortName_1 = cohortName) |>
+  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_2" = "cohortId")) |> 
+  #   dplyr::rename(eventCohortName_2 = cohortName) |>
+  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_3" = "cohortId")) |> 
+  #   dplyr::rename(eventCohortName_3 = cohortName) |>
+  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_4" = "cohortId")) |> 
+  #   dplyr::rename(eventCohortName_4 = cohortName)
   
   # Create path name and comboId map
   data_frame <- data_frame |>
