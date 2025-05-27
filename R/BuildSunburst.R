@@ -76,13 +76,14 @@ createPathwaySunburst <- function(
         dplyr::select(tidyselect::all_of(colname)) |>
         dplyr::left_join(eventNames, by = setNames("comboId", colname)) |>
         dplyr::transmute(
-          !!paste0("stepName", joinColSuffix) := pathName
+          !!paste0("pathName", joinColSuffix) := pathName
         )
     }
   )
   
   # # Combine original data with new step name columns
-  pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames)
+  pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames) |>
+    dplyr::select(!dplyr::contains("step"))
 
   # # Loop over each step column and join with matching column from eventNames
   # for (col in stepCols) {
