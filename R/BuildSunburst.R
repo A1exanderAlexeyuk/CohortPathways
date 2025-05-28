@@ -53,8 +53,9 @@ createPathwaySunburst <- function(
   
   # Filter rows to those with count above minCount value (default=5)
   pathsData <- cpResults$pathwaysAnalysisPathsData|>
-    dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) |>
-    dplyr::filter(countValue > minCount)
+    dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) 
+  # |>
+  #   dplyr::filter(countValue > minCount)
   
   # Remove columns with all NA values
   pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
@@ -105,7 +106,8 @@ createPathwaySunburst <- function(
   
   # # Combine original data with new step name columns
   pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames) |>
-    dplyr::select(!dplyr::contains("step"))
+    dplyr::select(!dplyr::contains("step")) |>
+    dplyr::filter(countValue > minCount)
   
   # Convert tabular data to JSON
   pathsDataJson <- d3r::d3_nest(
