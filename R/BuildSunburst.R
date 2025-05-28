@@ -51,13 +51,11 @@ createPathwaySunburst <- function(
     cpResults = cpResults
   )
   
-  # Filter rows to those with count above minCount value (default=5)
+  # Extract "pathwaysAnalysisPathsData" data frame from "cpResults" list and remove redundant columns
   pathsData <- cpResults$pathwaysAnalysisPathsData|>
     dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) 
-  # |>
-  #   dplyr::filter(countValue > minCount)
   
-  # Remove columns with all NA values
+  # Remove columns with all NA values (Note: cpResults$pathwaysAnalysisPathsData data frame comes with columns step1:step10 as default)
   pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
   
   # Stop function if the selected number of paths exceeds the number of paths in the analysis data (cpResults$pathwaysAnalysisPathsData)
@@ -65,13 +63,9 @@ createPathwaySunburst <- function(
     
     stop(paste0
          (
-        "Error: Number of selected paths (", 
-        nPaths, 
-        ") exceeds the number of paths in the analysis data (", 
-        ncol(pathsData)-1, ").",
-        "Please select a value of ",
-        ncol(pathsData)-1,
-        " or greater."
+        "Error: Number of selected paths (", nPaths, 
+        ") exceeds the number of paths in the analysis data (", ncol(pathsData)-1, ").",
+        "Please select a value of ", ncol(pathsData)-1, " or less."
      )
     )
   }
@@ -104,10 +98,13 @@ createPathwaySunburst <- function(
     }
   )
   
-  # # Combine original data with new step name columns
+  # Combine original data with new "step" columns
   pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames) |>
     dplyr::select(!dplyr::contains("step")) |>
     dplyr::filter(countValue > minCount)
+  
+  # Remove columns with all NA values after filtering for minimum person count
+  pathsDataFinal <- pathsDataFinal[, colSums(!is.na(pathsDataFinal)) > 0]
   
   # Convert tabular data to JSON
   pathsDataJson <- d3r::d3_nest(
