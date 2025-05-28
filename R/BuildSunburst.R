@@ -38,8 +38,9 @@ createPathwaySunburst <- function(
     types = "data.frame"
   )
   
-  # Extract "isCombo" data frame from "cpResults" list
-  isCombo <- purrr::pluck(cpResults, "isCombo")
+  # Extract "isCombo" data frame from "cpResults" list and restrict paths to maximum value (nPaths)
+  isCombo <- purrr::pluck(cpResults, "isCombo") |>
+    dplyr::filter(numberOfEvents <= nPaths)
   
   checkmate::assertDataFrame(x = isCombo, min.rows = 1, min.cols = 1)
   
@@ -50,10 +51,6 @@ createPathwaySunburst <- function(
     cpResults = cpResults
   )
   
-  # # Convert numeric column to character for joining
-  # eventNames <- eventNames |> 
-  #   dplyr::mutate(comboId = as.character(comboId))
-  
   # Filter rows to those with count above minCount value (default=5)
   pathsData <- cpResults$pathwaysAnalysisPathsData|>
     dplyr::select(-c(pathwayAnalysisGenerationId, targetCohortId)) |>
@@ -61,6 +58,31 @@ createPathwaySunburst <- function(
   
   # Remove columns with all NA values
   pathsData <- pathsData[, colSums(!is.na(pathsData)) > 0]
+  
+  # Stop function if the selected number of paths exceeds the number of paths in the analysis data (cpResults$pathwaysAnalysisPathsData)
+  if (nPaths > ncol(pathsData)-1) {
+    
+    stop(paste0
+         (
+        "Error: Number of selected paths (", 
+        nPaths, 
+        ") exceeds the number of paths in the analysis data (", 
+        ncol(pathsData)-1, ").",
+        "Please select a value of ",
+        ncol(pathsData)-1,
+        " or greater."
+     )
+    )
+  }
+  
+  # Generate "step" column names
+  colStepNames <- c(
+    paste0("step", 1:nPaths),
+    "countValue"
+  )
+  
+  # Subset the data frame selecting the columns from above
+  pathsData <- pathsData[, colStepNames]
   
   # Select all "step" column names
   stepCols <- grep("^step", names(pathsData), value = TRUE)
@@ -84,21 +106,6 @@ createPathwaySunburst <- function(
   # # Combine original data with new step name columns
   pathsDataFinal <- dplyr::bind_cols(pathsData, stepNames) |>
     dplyr::select(!dplyr::contains("step"))
-
-  # # Loop over each step column and join with matching column from eventNames
-  # for (col in stepCols) {
-  #   
-  #   # Extract number, e.g., from "step1" get "1"
-  #   stepNum <- gsub("step", "", col)
-  #   eventCol <- paste0("stepName", stepNum)
-  #   
-  #   # Join the data where stepX == stepNameX
-  #   pathsData <- dplyr::left_join(
-  #     pathsData,
-  #     stepNames |> dplyr::select(tidyselect::all_of(eventCol)),
-  #     by = setNames(eventCol, col)
-  #   )
-  # }
   
   # Convert tabular data to JSON
   pathsDataJson <- d3r::d3_nest(
@@ -195,50 +202,50 @@ createPathwaySunburst <- function(
       powers <- 2^exponents
       
       # Sort the summands in descending order (largest first)
-      current_parts <- sort(powers, decreasing = TRUE)
+      currentParts <- sort(powers, decreasing = TRUE)
       
       # Define minimal and maximum possible parts for a valid split
-      min_parts <- length(current_parts)
-      max_parts <- comboId[i] / 2  # since the smallest summand allowed is 2
+      minParts <- length(currentParts)
+      maxParts <- comboId[i] / 2  # since the smallest summand allowed is 2
       
-      if (numberOfEvents[i] < min_parts) {
-        stop(paste("The minimal splitting has", min_parts, "numberOfEvents. Cannot merge components further."))
+      if (numberOfEvents[i] < minParts) {
+        stop(paste("The minimal splitting has", minParts, "numberOfEvents. Cannot merge components further."))
       }
       
-      if (numberOfEvents[i] > max_parts) {
-        stop(paste("The maximal splitting into powers >1 is", max_parts, "numberOfEvents."))
+      if (numberOfEvents[i] > maxParts) {
+        stop(paste("The maximal splitting into powers >1 is", maxParts, "numberOfEvents."))
       }
       
       # Iteratively split the summands until the desired number of parts is reached
-      while (length(current_parts) < numberOfEvents[i]) {
+      while (length(currentParts) < numberOfEvents[i]) {
         
         # We cannot split further if every summand is 2
-        if (all(current_parts == 2)) {
+        if (all(currentParts == 2)) {
           stop("Cannot further split without producing ones.")
         }
         
         # Choose the largest summand that is greater than 2
-        candidates <- current_parts[current_parts > 2]
-        idx <- which(current_parts == max(candidates))[1]
-        value_to_split <- current_parts[idx]
+        candidates <- currentParts[currentParts > 2]
+        idx <- which(currentParts == max(candidates))[1]
+        valueToSplit <- currentParts[idx]
         
         # Replace the chosen summand with two equal halves
-        current_parts <- current_parts[-idx]   # Remove the selected summand
-        current_parts <- c(current_parts, value_to_split / 2, value_to_split / 2)
+        currentParts <- currentParts[-idx]   # Remove the selected summand
+        currentParts <- c(currentParts, valueToSplit / 2, valueToSplit / 2)
         
         # Resort in descending order for consistency.
-        current_parts <- sort(current_parts, decreasing = TRUE)
+        currentParts <- sort(currentParts, decreasing = TRUE)
       }
       
       # Convert the numeric vector to a single string, with elements separated by commas
-      result_string <- paste(current_parts, collapse = ",")
+      resultString <- paste(currentParts, collapse = ",")
       
       # Create data frame
       data_frame_with_combos <- data.frame(
         comboId = comboId[i],
         numberOfEvents = numberOfEvents[i],
         isCombo = isCombo[i],
-        splitNumbers = result_string
+        splitNumbers = resultString
       )
       
       # Append values to data frame
@@ -248,13 +255,13 @@ createPathwaySunburst <- function(
   }
   
   # Maximum number of columns to create
-  max_cols <- max(unique(data_frame$numberOfEvents))
+  maxCols <- max(unique(data_frame$numberOfEvents))
   
   # Create a vector of column names
-  new_colnames <- paste0("eventCohortCode_", 1:max_cols)
+  newColnames <- paste0("eventCohortCode_", 1:maxCols)
   
   # Convert the vector of column names to a data frame
-  df <- setNames(data.frame(matrix(ncol = length(new_colnames), nrow = 0)), new_colnames)
+  df <- setNames(data.frame(matrix(ncol = length(newColnames), nrow = 0)), newColnames)
   
   # Add NA in all rows (no. of rows is equal to the length of the original data frame)
   df[nrow(data_frame),] <- NA
@@ -266,7 +273,7 @@ createPathwaySunburst <- function(
   data_frame <- tidyr::separate(
     data_frame, 
     col = splitNumbers,
-    into = new_colnames, 
+    into = newColnames, 
     sep = ",", 
     convert = TRUE, 
     remove = FALSE
@@ -295,17 +302,6 @@ createPathwaySunburst <- function(
         )
    }
   )
-  
-  # # Join event cohort id to main data frame
-  # data_frame <- data_frame |> 
-  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_1" = "code")) |> 
-  #   dplyr::rename(eventCohortId_1 = eventCohortId) |>
-  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_2" = "code")) |> 
-  #   dplyr::rename(eventCohortId_2 = eventCohortId) |>
-  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_3" = "code")) |> 
-  #   dplyr::rename(eventCohortId_3 = eventCohortId) |>
-  #   dplyr::left_join(eventCohortIdAndCode, by = c("eventCohortCode_4" = "code")) |> 
-  #   dplyr::rename(eventCohortId_4 = eventCohortId)
   
   # Extract event cohort names
   cohortDefinitionSet <- generationSet |>
@@ -339,22 +335,7 @@ createPathwaySunburst <- function(
   # Columns to concatenate
   colsToConcat <- grep("^eventCohortName_", names(data_frame), value = TRUE)
   
-  # # Join event cohort name to main data frame
-  # data_frame <- data_frame |>
-  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_1" = "cohortId")) |> 
-  #   dplyr::rename(eventCohortName_1 = cohortName) |>
-  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_2" = "cohortId")) |> 
-  #   dplyr::rename(eventCohortName_2 = cohortName) |>
-  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_3" = "cohortId")) |> 
-  #   dplyr::rename(eventCohortName_3 = cohortName) |>
-  #   dplyr::left_join(cohortDefinitionSet, by = c("eventCohortId_4" = "cohortId")) |> 
-  #   dplyr::rename(eventCohortName_4 = cohortName)
-  
-  # # Create path name and comboId map
-  # data_frame <- data_frame |>
-  #   tidyr::unite(col = "pathName", eventCohortName_1:eventCohortName_4, sep = " | ", na.rm = TRUE) |>
-  #   dplyr::select(c(comboId, pathName))
-  
+  # Unite columns
   data_frame <- data_frame |>
     tidyr::unite(
       "pathName",                       # New column name
