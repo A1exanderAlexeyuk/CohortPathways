@@ -4,31 +4,40 @@
 \alias{createPathwaySunburst}
 \title{Create a Sunburst Plot for Treatment Pathways}
 \usage{
-createPathwaySunburst(cpResults, generationSet, nPaths = 3, minCount = 5)
+createPathwaySunburst(cpResults, generationSet, maxPaths = 5, minCount = 5)
 }
 \arguments{
 \item{cpResults}{A list containing the results from CohortPathway analysis.
 Must include 'pathwaysAnalysisPathsData' and 'isCombo' data frames.}
 
 \item{generationSet}{A data frame containing information about cohorts
-that will be used to generate descriptive names for the events in the diagram and target names of the plot}
+that will be used to generate descriptive names for the events in the
+diagram and the plot titles.}
 
-\item{nPaths}{Integer specifying the maximum number of steps to include in the plot.}
+\item{maxPaths}{Integer specifying the maximum number of steps (depth) to include in the plot.}
 
 \item{minCount}{Integer specifying the minimum count value for a path to be included.}
 }
 \value{
-An HTML widget object containing the interactive sunburst plot.
+A named list of plotly objects, with each element corresponding to a target cohort.
 }
 \description{
 This function creates an interactive sunburst plot to visualize treatment pathways
-from CohortPathway analysis results. The plot shows the hierarchical structure of
-treatment sequences, with each ring representing a step in the pathway.
+from CohortPathway analysis results using the plotly package. The plot shows the
+hierarchical structure of treatment sequences, with each ring representing a step
+in the pathway.
 }
 \examples{
-
 \dontrun{
-library(CohortPathway)
-sunburstPlot <- CohortPathways::createPathwaySunburst(cpResults, cohortsToCreate)
+library(CohortPathways)
+# Assuming cpResults and generationSet are loaded
+sunburstPlots <- createPathwaySunburst(
+  cpResults = cpResults,
+  generationSet = generationSet,
+  maxPaths = 5,
+  minCount = 10
+)
+# To display the plot for the first target cohort
+sunburstPlots[[1]]
 }
 }
