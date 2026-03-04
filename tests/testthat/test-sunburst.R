@@ -27,7 +27,11 @@ test_that("Sunburst works", {
     step10 = c(NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA),
     countValue = c(3, 3013, 1, 5, 2, 1, 1, 1, 8, 2, 3, 1, 6640, 1, 1, 6, 153, 1, 2, 1, 44, 12, 208, 7, 5, 1, 1, 35, 2, 231, 5, 1)
   )
+<<<<<<< HEAD
 
+=======
+  
+>>>>>>> 74c90602845a99cb825c6f87e6a575f9f7230648
   cpResults$isCombo <- data.frame(
     targetCohortId = c(4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4),
     comboId = c(2, 4, 6, 8, 16, 20, 24, 32, 48, 52, 56),
@@ -38,10 +42,26 @@ test_that("Sunburst works", {
     cohortId = c(1, 2, 3, 4, 5, 6, 7),
     cohortName = c("drug1", "drug2", "drug3", "target", "drug4", "drug5", "drug6")
   )
+<<<<<<< HEAD
   plot <- CohortPathways::createPathwaySunburst(
     cpResults,
     generationSet
   )
   expect_true("data" %in% names(plot[[1]]$x))
   expect_true("sunburst" %in% class(plot[[1]]))
+=======
+  expect_warning(expect_error(CohortPathways::createPathwaySunburst(
+    cpResults,
+    generationSet,
+    5
+  )))
+  plot <- suppressWarnings(CohortPathways::createPathwaySunburst(
+    cpResults,
+    generationSet,
+    2
+  ))
+  
+  expect_true("data" %in% names(plot$x))
+  expect_true("sunburst" %in% class(plot))
+>>>>>>> 74c90602845a99cb825c6f87e6a575f9f7230648
 })
