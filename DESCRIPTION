@@ -17,17 +17,23 @@ Depends:
 Imports:
     checkmate,
     dplyr,
-    htmlwidgets,
     lifecycle,
-    networkD3,
     purrr,
     rlang,
     SqlRender,
-    tidyr
+    tidyr,
+    tidyselect
 Suggests:
-  remotes,
-	testthat,
-	withr
+    d3r,
+    grafify,
+    plotly,
+    remotes,
+    sunburstR,
+    htmlwidgets,
+    testthat,
+    withr,
+    knitr,
+    rmarkdown
 License: Apache License
 RoxygenNote: 7.3.2
 Roxygen: list(markdown = TRUE)
