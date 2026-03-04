@@ -1,4 +1,4 @@
-test_that("Sunburst works", {
+test_that("Sankey works", {
   cpResults <- list()
   cpResults$pathwayAnalysisStatsData <- data.frame(1)
   cpResults$pathwaysAnalysisEventsData <- data.frame(1)
@@ -38,17 +38,54 @@ test_that("Sunburst works", {
     cohortId = c(1, 2, 3, 4, 5, 6, 7),
     cohortName = c("drug1", "drug2", "drug3", "target", "drug4", "drug5", "drug6")
   )
-  expect_warning(expect_error(CohortPathways::createPathwaySunburst(
+
+  # Test basic Sankey creation
+  plot <- suppressWarnings(CohortPathways::createPathwaySankey(
     cpResults,
     generationSet,
-    5
-  )))
-  plot <- suppressWarnings(CohortPathways::createPathwaySunburst(
-    cpResults,
-    generationSet,
-    2
+    maxPaths = 2,
+    minCount = 1
   ))
 
-  expect_true("data" %in% names(plot$x))
-  expect_true("sunburst" %in% class(plot))
+  expect_true("plotly" %in% class(plot))
+  expect_true("htmlwidget" %in% class(plot))
+
+  # Test with showDropOff enabled
+  plotDropOff <- suppressWarnings(CohortPathways::createPathwaySankey(
+    cpResults,
+    generationSet,
+    maxPaths = 2,
+    minCount = 1,
+    showDropOff = TRUE
+  ))
+
+  expect_true("plotly" %in% class(plotDropOff))
+
+  # Test with custom color palette
+  plotCustom <- suppressWarnings(CohortPathways::createPathwaySankey(
+    cpResults,
+    generationSet,
+    maxPaths = 2,
+    minCount = 1,
+    colorPalette = c("#1b9e77", "#d95f02", "#7570b3"),
+    showStepLabels = FALSE
+  ))
+
+  expect_true("plotly" %in% class(plotCustom))
+
+  # Test that maxPaths = 1 throws an error (need >= 2 for Sankey)
+  expect_error(CohortPathways::createPathwaySankey(
+    cpResults,
+    generationSet,
+    maxPaths = 1,
+    minCount = 1
+  ))
+
+  # Test that exceeding available steps throws an error
+  expect_warning(expect_error(CohortPathways::createPathwaySankey(
+    cpResults,
+    generationSet,
+    maxPaths = 5,
+    minCount = 1
+  )))
 })

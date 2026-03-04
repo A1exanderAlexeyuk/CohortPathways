@@ -23,7 +23,9 @@ Imports:
     SqlRender,
     tidyr
 Suggests:
+    d3r,
     grafify,
+    plotly,
     remotes,
     sunburstR,
     htmlwidgets,
